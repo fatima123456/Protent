@@ -1,0 +1,4 @@
+#Fri Jun 08 14:29:24 CEST 2018
+base.0=C\:\\Users\\saghir\\AndroidStudioProjects\\protent\\app\\build\\intermediates\\transforms\\dexMerger\\debug\\45
+path.0=classes.dex
+renamed.0=classes.dex
