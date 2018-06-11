@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.bluetooth.BluetoothAdapter;
 import android.util.Log;
 import android.bluetooth.BluetoothDevice;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.os.ParcelUuid;
 import android.bluetooth.BluetoothSocket;
@@ -27,12 +28,17 @@ public class TurnOnDevice extends AppCompatActivity {
     private final static int REQUEST_ENABLE_BT = 1;
     private OutputStream outputStream;
     private InputStream inputStream;
+    BluetoothSocket socket;
+    boolean isTurnedOn;
+    boolean openedSocket;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_turn_on_device);
         BA = BluetoothAdapter.getDefaultAdapter();
+        isTurnedOn = false;
+        openedSocket = false;
         //handle protect button
         protect = (Button)findViewById(R.id.button12);
         protect.setOnClickListener(new View.OnClickListener() {
@@ -40,7 +46,7 @@ public class TurnOnDevice extends AppCompatActivity {
             public void onClick(View view) {
                 //TODO: send the turn on signal to the device
 
-                Log.d("TURN ON DEVICE: ", "clicked on button");
+                //Log.d("TURN ON DEVICE: ", "clicked on button");
                 /*if (mBluetoothAdapter == null) {
                     //TODO: Device doesn't support Bluetooth
 
@@ -55,7 +61,44 @@ public class TurnOnDevice extends AppCompatActivity {
                     Log.d("TURN ON DEVICE: ","requested enabling.......BLA BLA BLA.......");
                 }
                 else{
-                    turnOnDevice();
+                    Log.d("SOCKET: ","bluetooth already enabled");
+                    /*if(!socket.isConnected()){
+                        openSocket();
+                    }*/
+                    //TODO:depends if the device is turned on or shut down DO SMTH
+                    //turnOnDevice();
+                    if(isTurnedOn){
+                        Log.d("SOCKET: ","sono entrato in isturnedOn");
+                        //device is turned on change then it must shutdown and change text
+                        TextView testo = (TextView)findViewById(R.id.textView5);
+                        testo.setText("Make sure your device is turned and in the right place! Get out of the tent!");
+                        protect.setText("PROTECT THE TENT");
+                        isTurnedOn = false;
+                        openSocket();
+                        sendCommand("stop McKinley-KEA-3");
+                        try{
+                            socket.close();
+                        }catch(Exception e){
+                            Log.d("SOCKET: ","failed to close socket");
+                        }
+                        startActivity(new Intent(TurnOnDevice.this,InstallProtect.class));
+                    }
+                    else{
+                        Log.d("SOCKET: ","sono nel branch falso di isturnedOn");
+                        //device needs to be shut down
+                        TextView testo = (TextView)findViewById(R.id.textView5);
+                        testo.setText("Your tent is now protected!");
+                        protect.setText("SWITCH OFF");
+                        isTurnedOn = true;
+                        //connect socket if it is not connected
+                        openSocket();
+                        sendCommand("start McKinley-KEA-3");
+                        try{
+                            socket.close();
+                        }catch(Exception e){
+                            Log.d("SOCKET: ","failed to close socket");
+                        }
+                    }
                 }
                 //startActivity(new Intent(TurnOnDevice.this,SwitchOffDevice.class));
             }
@@ -67,13 +110,24 @@ public class TurnOnDevice extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if(resultCode == RESULT_OK){
             // bluetooth enabled
-            turnOnDevice();
+            //turnOnDevice();
+            TextView testo = (TextView)findViewById(R.id.textView5);
+            testo.setText("Your tent is now protected!");
+            protect.setText("SWITCH OFF");
+            isTurnedOn = true;
+            openSocket();
+            sendCommand("start McKinley-KEA-3");
+            try{
+                socket.close();
+            }catch(Exception e){
+                Log.d("SOCKET: ","failed to close socket");
+            }
         }else{
             // show error
         }
     }
 
-    private void turnOnDevice(){
+    private void openSocket(){
         //Toast.makeText(getApplicationContext(), "YAAy",Toast.LENGTH_LONG).show();
         Set<BluetoothDevice> pairedDevices = BA.getBondedDevices();
         //TODO: still need to accoppiare il device all'inizio dell'installazione
@@ -87,7 +141,7 @@ public class TurnOnDevice extends AppCompatActivity {
                 if(deviceName.equals("raspberrypi")){
                     Log.d("SOCKET:","connessa a raspberrypi");
                     ParcelUuid[] uuids = device.getUuids();
-                    BluetoothSocket socket;
+
                     final UUID sppUuid = UUID.fromString("94f39d29-7d6d-437d-973b-fba39e49d4ee");
                     try{
                         socket = device.createRfcommSocketToServiceRecord(sppUuid);
@@ -106,24 +160,26 @@ public class TurnOnDevice extends AppCompatActivity {
                             break;
                         }
                         Log.d("SOCKET: ","Connected to bluetooth socket");
-                        String command = "start McKinley-KEA-3";
-                        try {
-                            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), "ASCII"));
-                            writer.write(command);
-                            writer.flush();
-                        } catch (IOException ex) {
-                            Log.d("SOCKET: ","Failed to write a command: " + ex.toString());
-                            return;
-                        }
-                        Log.d("SOCKET: ","Command is sent: " + command);
-
+                        //String command = "start McKinley-KEA-3";
                     } catch(IOException e){
                         Log.d("SOCKET: ","failed to create RFComm socket "+e.toString());
                     }
-                    startActivity(new Intent(TurnOnDevice.this,SwitchOffDevice.class));
+                    //startActivity(new Intent(TurnOnDevice.this,SwitchOffDevice.class));
                 }
             }
         }
+    }
+
+    private void sendCommand(String command){
+        try {
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), "ASCII"));
+            writer.write(command);
+            writer.flush();
+        } catch (IOException ex) {
+            Log.d("SOCKET: ","Failed to write a command: " + ex.toString());
+            return;
+        }
+        Log.d("SOCKET: ","Command is sent: " + command);
     }
 
 }
