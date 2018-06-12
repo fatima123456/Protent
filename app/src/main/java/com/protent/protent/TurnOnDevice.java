@@ -75,6 +75,7 @@ public class TurnOnDevice extends AppCompatActivity {
                         protect.setText("PROTECT THE TENT");
                         isTurnedOn = false;
                         openSocket();
+
                         sendCommand("stop McKinley-KEA-3");
                         try{
                             socket.close();
